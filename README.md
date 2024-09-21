@@ -15,4 +15,5 @@ Planned features
 - Changing and Saving afformentioned files
 
 For usage information look at the `pkg/main.go` examples
-![Dokumentation](./parser/DOKUMENTATION.md)
+
+[Auto generated Dokumentation](./parser/DOKUMENTATION.md)
