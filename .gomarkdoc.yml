@@ -1,0 +1,15 @@
+output:
+  file: "DOCUMENTATION.md"
+  format: "markdown"
+  mode: "replace"
+  
+footer: |
+  For more details check the official [Documentation](https://github.com/ppy/osu/wiki/Legacy-database-file-structure#osudb)
+
+repository:
+  url: "https://github.com/juli0n21/go-osu-parser"
+  defaultBranch: "main"
+  path: ""
+
+filters:
+  include: ["parser/*.go"]
