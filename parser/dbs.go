@@ -29,7 +29,7 @@ type Beatmap struct {
 	Difficulty            string
 	AudioFileName         string
 	MD5Hash               string
-	OSUFileName           string
+	FileName              string
 	RankedStatus          byte
 	NumberOfHitCircles    uint16
 	NumberOfSliders       uint16
@@ -123,10 +123,9 @@ type Score struct {
 	MaxCombo          uint16
 	PerfectCombo      bool
 	Mods              int32
-	EmptyString       string
-	Timestamp         int64
+	Timestamp         time.Time
 	OnlineScoreId     int64
-	AdditionalModInfo int64
+	AdditionalModInfo float64
 }
 
 func ParseCollectionsDB(filename string) (*Collections, error) {
@@ -334,13 +333,16 @@ func readScore(r io.Reader) (*Score, error) {
 		return nil, err
 	}
 
+	//EmptyString
 	_, _ = readString(r)
 
-	timestamp, err := readLong(r)
+	ticks, err := readLong(r)
 	if err != nil {
 		return nil, err
 	}
+	timestamp := readDateTime(ticks)
 
+	//-1
 	_, err = readInt(r)
 	if err != nil {
 		return nil, err
@@ -351,17 +353,13 @@ func readScore(r io.Reader) (*Score, error) {
 		return nil, err
 	}
 
-	var additionalModInfo int64
+	var additionalModInfo float64
 	if mods<<23 == 1 {
-		additionalModInfo, err = readLong(r)
+		additionalModInfo, err = readDouble(r)
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = readLong(r)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return &Score{
@@ -384,7 +382,6 @@ func readScore(r io.Reader) (*Score, error) {
 		OnlineScoreId:     onlineScoreId,
 		AdditionalModInfo: additionalModInfo,
 	}, nil
-
 }
 
 func readBeatmap(r io.Reader, version int32) (*Beatmap, error) {
@@ -450,7 +447,7 @@ func readBeatmap(r io.Reader, version int32) (*Beatmap, error) {
 	if err != nil {
 		return nil, err
 	}
-	beatmap.OSUFileName = osuFileName
+	beatmap.FileName = osuFileName
 
 	var rankedStatus byte
 	if err := binary.Read(r, binary.LittleEndian, &rankedStatus); err != nil {
