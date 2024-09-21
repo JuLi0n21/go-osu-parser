@@ -2,6 +2,10 @@
 
 Small go based Library to Read osu! dbs and .osu files
 
+```go
+import "github.com/juli0n21/go-osu-parser/parser"
+```
+
 Currently Supported files:
 -   osu!.db
 - scores.db
