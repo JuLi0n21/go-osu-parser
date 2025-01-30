@@ -1,3 +1,4 @@
+#gomarkdoc -v ./parser -o DOKUMENTATION.md
 output:
   file: "DOCUMENTATION.md"
   format: "markdown"
