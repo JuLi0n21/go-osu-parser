@@ -1,4 +1,4 @@
-package osuParser
+package parser
 
 import (
 	"bufio"
@@ -11,36 +11,39 @@ import (
 )
 
 type General struct {
-	AudioFilename            string
-	AudioLeadIn              int
-	AudioHash                string
-	PreviewTime              int
-	Countdown                int
-	SampleSet                string
 	StackLeniency            float64
-	Mode                     int
-	LetterboxInBreaks        int
-	StoryFireInFront         int
-	UseSkinSprites           int
-	AlwaysShowPlayfield      int
-	OverlayPosition          string
-	SkinPreference           string
+	AudioLeadIn              int
 	EpilepsyWarning          int
 	CountdownOffset          int
 	SpecialStyle             int
 	WidescreenStoryboard     int
 	SamplesMatchPlaybackRate int
+	PreviewTime              int
+	Countdown                int
+	Mode                     int
+	LetterboxInBreaks        int
+	StoryFireInFront         int
+	UseSkinSprites           int
+	AlwaysShowPlayfield      int
+	AudioHash                string
+	SampleSet                string
+	OverlayPosition          string
+	SkinPreference           string
+	AudioFilename            string
 }
 
 type Editor struct {
-	Bookmarks       []int
 	DistanceSpacing float64
+	TimelineZoom    float64
 	BeatDivisor     int
 	GridSize        int
-	TimelineZoom    float64
+	Bookmarks       []int
 }
 
 type Metadata struct {
+	BeatmapID     int
+	BeatmapSetID  int
+	Tags          []string
 	Title         string
 	TitleUnicode  string
 	Artist        string
@@ -48,9 +51,6 @@ type Metadata struct {
 	Creator       string
 	Version       string
 	Source        string
-	Tags          []string
-	BeatmapID     int
-	BeatmapSetID  int
 }
 
 type Difficulty struct {
@@ -63,14 +63,14 @@ type Difficulty struct {
 }
 
 type Event struct {
-	EventType   string
 	StartTime   int
 	EventParams []string
+	EventType   string
 }
 
 type TimingPointFile struct {
-	Time        int
 	BeatLength  float64
+	Time        int
 	Meter       int
 	SampleSet   int
 	SampleIndex int
@@ -109,11 +109,13 @@ type OsuFile struct {
 
 // not yet Implemented
 type ReplayFile struct {
-	Gamemode                 byte
+	AdditionalModInformation float64
+	Timestamp                int64
+	OnlineScoreId            int64
+	LengthInBytes            int32
+	Mods                     int32
+	Score                    int32
 	Version                  int32
-	beatmapMD5Hash           string
-	playername               string
-	replayMD5Hash            string
 	Count300s                int16
 	Count100s                int16
 	Count50s                 int16
@@ -121,16 +123,14 @@ type ReplayFile struct {
 	Katus                    int16
 	CountMiss                int16
 	Combo                    int16
-	Score                    int32
+	Gamemode                 byte
 	PerfectCombo             byte
-	Mods                     int32
 	HealthGraph              []*Health
-	Timestamp                int64
-	LengthInBytes            int32
 	Replay                   []*ReplayData
-	OnlineScoreId            int64
-	AdditionalModInformation float64
 	LZMA                     []*byte
+	beatmapMD5Hash           string
+	playername               string
+	replayMD5Hash            string
 }
 
 type Health struct {
@@ -150,7 +150,7 @@ func ParseOsuFile(filename string) (*OsuFile, error) {
 	}()
 
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return nil, fmt.Errorf("%s in file: %s", err, filename)
+		return nil, err
 	}
 
 	OsuFile, err := parseOsuFile(filename)
@@ -171,7 +171,7 @@ func parseOsuFile(filename string) (*OsuFile, error) {
 		}
 	}()
 
-	file, err := os.Open(filename)
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
 		return nil, err
 	}
