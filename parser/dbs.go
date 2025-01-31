@@ -20,61 +20,65 @@ type OsuDB struct {
 }
 
 type Beatmap struct {
-	LastModificationTime  int64
-	LastPlayed            int64
-	LastChecked           int64
-	DrainTime             int32
-	TotalTime             int32
-	AudioPreviewStartTime int32
-	DifficultyID          int32
-	BeatmapID             int32
-	ThreadID              int32
-	LastModificationTime2 int32
-	OnlineOffset          int16
-	LocalBeatmapOffset    uint16
-	NumberOfHitCircles    uint16
-	NumberOfSliders       uint16
-	NumberOfSpinners      uint16
-	RankedStatus          byte
-	GradeStandard         byte
-	GradeTaiko            byte
-	GradeCTB              byte
-	GradeMania            byte
-	ManiaScrollSpeed      byte
-	GameplayMode          byte
-	IsUnplayed            bool
-	IsOsz2                bool
-	IgnoreBeatmapSound    bool
-	IgnoreBeatmapSkin     bool
-	DisableStoryboard     bool
-	DisableVideo          bool
-	VisualOverride        bool
-	ApproachRate          float32
-	CircleSize            float32
-	HPDrain               float32
-	OverallDifficulty     float32
-	StackLeniency         float32
-	SliderVelocity        float64
-	Artist                string
-	ArtistUnicode         string
-	SongTitle             string
-	SongTitleUnicode      string
-	Creator               string
-	Difficulty            string
-	AudioFileName         string
-	MD5Hash               string
-	FileName              string
-	SongSource            string
-	SongTags              string
-	Font                  string
-	FolderName            string
-	StarRatingsStandard   map[int]int64
-	StarRatingsTaiko      map[int]int64
-	StarRatingsCTB        map[int]int64
-	StarRatingsMania      map[int]int64
-	TimingPoints          []TimingPoint
-	SizeInBytes           *int32
-	UnknownShort          *uint16
+	LastModificationTime   int64
+	LastPlayed             int64
+	LastChecked            int64
+	DrainTime              int32
+	TotalTime              int32
+	AudioPreviewStartTime  int32
+	DifficultyID           int32
+	BeatmapID              int32
+	ThreadID               int32
+	LastModificationTime2  int32
+	OnlineOffset           int16
+	LocalBeatmapOffset     uint16
+	NumberOfHitCircles     uint16
+	NumberOfSliders        uint16
+	NumberOfSpinners       uint16
+	RankedStatus           byte
+	GradeStandard          byte
+	GradeTaiko             byte
+	GradeCTB               byte
+	GradeMania             byte
+	ManiaScrollSpeed       byte
+	GameplayMode           byte
+	IsUnplayed             bool
+	IsOsz2                 bool
+	IgnoreBeatmapSound     bool
+	IgnoreBeatmapSkin      bool
+	DisableStoryboard      bool
+	DisableVideo           bool
+	VisualOverride         bool
+	ApproachRate           float32
+	CircleSize             float32
+	HPDrain                float32
+	OverallDifficulty      float32
+	StackLeniency          float32
+	SliderVelocity         float64
+	Artist                 string
+	ArtistUnicode          string
+	SongTitle              string
+	SongTitleUnicode       string
+	Creator                string
+	Difficulty             string
+	AudioFileName          string
+	MD5Hash                string
+	FileName               string
+	SongSource             string
+	SongTags               string
+	Font                   string
+	FolderName             string
+	StarRatingsStandard    map[int]float32
+	StarRatingsTaiko       map[int]float32
+	StarRatingsCTB         map[int]float32
+	StarRatingsMania       map[int]float32
+	StarRatingsStandardOld map[int]int64
+	StarRatingsTaikoOld    map[int]int64
+	StarRatingsCTBOld      map[int]int64
+	StarRatingsManiaOld    map[int]int64
+	TimingPoints           []TimingPoint
+	SizeInBytes            *int32
+	UnknownShort           *uint16
 }
 
 type TimingPoint struct {
@@ -539,26 +543,51 @@ func readBeatmap(r io.Reader, version int32) (*Beatmap, error) {
 	}
 	beatmap.SliderVelocity = sliderVelocity
 
-	if version >= 20140609 {
+	if version >= 20140609 && version < 20250107 {
 		stdStars, err := readIntDoublePairs(r)
 		if err != nil {
 			return nil, err
 		}
-		beatmap.StarRatingsStandard = stdStars
+		beatmap.StarRatingsStandardOld = stdStars
 
 		taikoStars, err := readIntDoublePairs(r)
 		if err != nil {
 			return nil, err
 		}
-		beatmap.StarRatingsTaiko = taikoStars
+		beatmap.StarRatingsTaikoOld = taikoStars
 
 		ctbStars, err := readIntDoublePairs(r)
 		if err != nil {
 			return nil, err
 		}
-		beatmap.StarRatingsCTB = ctbStars
+		beatmap.StarRatingsCTBOld = ctbStars
 
 		maniaStars, err := readIntDoublePairs(r)
+		if err != nil {
+			return nil, err
+		}
+		beatmap.StarRatingsManiaOld = maniaStars
+
+	} else if version >= 20250107 {
+		stdStars, err := readIntFloatPairs(r)
+		if err != nil {
+			return nil, err
+		}
+		beatmap.StarRatingsStandard = stdStars
+
+		taikoStars, err := readIntFloatPairs(r)
+		if err != nil {
+			return nil, err
+		}
+		beatmap.StarRatingsTaiko = taikoStars
+
+		ctbStars, err := readIntFloatPairs(r)
+		if err != nil {
+			return nil, err
+		}
+		beatmap.StarRatingsCTB = ctbStars
+
+		maniaStars, err := readIntFloatPairs(r)
 		if err != nil {
 			return nil, err
 		}

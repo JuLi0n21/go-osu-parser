@@ -4,7 +4,9 @@ output:
   format: "markdown"
   mode: "replace"
   
-footer: |
+header: |
+  Due to breaking changes in the `osu!.db` introduced in version `20250107`, have outdated types been suffixed with `Old`. These outdated types will only be populated when the version is *below* the aforementioned one.
+
   For more details check the official [Documentation](https://github.com/ppy/osu/wiki/Legacy-database-file-structure#osudb)
 
 repository:

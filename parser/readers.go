@@ -160,3 +160,42 @@ func readIntDoublePairs(r io.Reader) (map[int]int64, error) {
 	}
 	return pairs, nil
 }
+
+func readIntFloatPairs(r io.Reader) (map[int]float32, error) {
+	count, err := readInt(r)
+	if err != nil {
+		return nil, err
+	}
+
+	pairs := make(map[int]float32)
+	for i := 0; i < int(count); i++ {
+		var flag byte
+		if err := binary.Read(r, binary.LittleEndian, &flag); err != nil {
+			return nil, err
+		}
+		if flag != 0x08 {
+			return nil, errors.New("invalid Int-Float pair flag")
+		}
+
+		intVal, err := readInt(r)
+		if err != nil {
+			return nil, err
+		}
+
+		var floatFlag byte
+		if err := binary.Read(r, binary.LittleEndian, &floatFlag); err != nil {
+			return nil, err
+		}
+		if floatFlag != 0x0c {
+			return nil, errors.New("invalid Float flag in Int-Float pair")
+		}
+
+		floatVal, err := readSingle(r)
+		if err != nil {
+			return nil, err
+		}
+
+		pairs[int(intVal)] = floatVal
+	}
+	return pairs, nil
+}
