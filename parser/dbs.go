@@ -818,7 +818,6 @@ func ParseOsuDB(filename string) (*OsuDB, error) {
 	for i := 0; i < int(numberOfBeatmaps); i++ {
 		beatmap, err := readBeatmap(reader, version)
 		if err != nil {
-			//fmt.Println(err)
 			return nil, err
 		}
 		beatmaps = append(beatmaps, beatmap)
