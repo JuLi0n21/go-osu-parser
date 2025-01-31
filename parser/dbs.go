@@ -1,4 +1,4 @@
-package osuParser
+package parser
 
 import (
 	"bufio"
@@ -9,18 +9,52 @@ import (
 )
 
 type OsuDB struct {
+	UnlockDate       time.Time
 	Version          int32
 	FolderCount      int32
-	AccountUnlocked  bool
-	UnlockDate       time.Time
-	PlayerName       string
-	NumberOfBeatmaps int32
-	Beatmaps         []*Beatmap
 	UserPermissions  int32
+	NumberOfBeatmaps int32
+	AccountUnlocked  bool
+	Beatmaps         []*Beatmap
+	PlayerName       string
 }
 
 type Beatmap struct {
-	SizeInBytes           *int32
+	LastModificationTime  int64
+	LastPlayed            int64
+	LastChecked           int64
+	DrainTime             int32
+	TotalTime             int32
+	AudioPreviewStartTime int32
+	DifficultyID          int32
+	BeatmapID             int32
+	ThreadID              int32
+	LastModificationTime2 int32
+	OnlineOffset          int16
+	LocalBeatmapOffset    uint16
+	NumberOfHitCircles    uint16
+	NumberOfSliders       uint16
+	NumberOfSpinners      uint16
+	RankedStatus          byte
+	GradeStandard         byte
+	GradeTaiko            byte
+	GradeCTB              byte
+	GradeMania            byte
+	ManiaScrollSpeed      byte
+	GameplayMode          byte
+	IsUnplayed            bool
+	IsOsz2                bool
+	IgnoreBeatmapSound    bool
+	IgnoreBeatmapSkin     bool
+	DisableStoryboard     bool
+	DisableVideo          bool
+	VisualOverride        bool
+	ApproachRate          float32
+	CircleSize            float32
+	HPDrain               float32
+	OverallDifficulty     float32
+	StackLeniency         float32
+	SliderVelocity        float64
 	Artist                string
 	ArtistUnicode         string
 	SongTitle             string
@@ -30,51 +64,17 @@ type Beatmap struct {
 	AudioFileName         string
 	MD5Hash               string
 	FileName              string
-	RankedStatus          byte
-	NumberOfHitCircles    uint16
-	NumberOfSliders       uint16
-	NumberOfSpinners      uint16
-	LastModificationTime  int64
-	ApproachRate          float32
-	CircleSize            float32
-	HPDrain               float32
-	OverallDifficulty     float32
-	SliderVelocity        float64
+	SongSource            string
+	SongTags              string
+	Font                  string
+	FolderName            string
 	StarRatingsStandard   map[int]int64
 	StarRatingsTaiko      map[int]int64
 	StarRatingsCTB        map[int]int64
 	StarRatingsMania      map[int]int64
-	DrainTime             int32
-	TotalTime             int32
-	AudioPreviewStartTime int32
 	TimingPoints          []TimingPoint
-	DifficultyID          int32
-	BeatmapID             int32
-	ThreadID              int32
-	GradeStandard         byte
-	GradeTaiko            byte
-	GradeCTB              byte
-	GradeMania            byte
-	LocalBeatmapOffset    uint16
-	StackLeniency         float32
-	GameplayMode          byte
-	SongSource            string
-	SongTags              string
-	OnlineOffset          int16
-	Font                  string
-	IsUnplayed            bool
-	LastPlayed            int64
-	IsOsz2                bool
-	FolderName            string
-	LastChecked           int64
-	IgnoreBeatmapSound    bool
-	IgnoreBeatmapSkin     bool
-	DisableStoryboard     bool
-	DisableVideo          bool
-	VisualOverride        bool
+	SizeInBytes           *int32
 	UnknownShort          *uint16
-	LastModificationTime2 int32
-	ManiaScrollSpeed      byte
 }
 
 type TimingPoint struct {
@@ -90,9 +90,9 @@ type Collections struct {
 }
 
 type Collection struct {
-	Name             string
 	NumberOfBeatmaps int32
 	Beatmaps         []*string
+	Name             string
 }
 
 type Scores struct {
@@ -102,34 +102,34 @@ type Scores struct {
 }
 
 type BeatmapScores struct {
-	BeatmapMD5Hash string
 	NumberOfScores int32
+	BeatmapMD5Hash string
 	Scores         []*Score
 }
 
 type Score struct {
-	Gamemode          byte
+	Timestamp         time.Time
+	AdditionalModInfo float64
+	OnlineScoreId     int64
 	Version           int32
-	BeatmapMD5Hash    string
-	PlayerName        string
-	ReplayMD5Hash     string
+	Mods              int32
+	ReplayScore       int32
 	Count300s         uint16
 	Count100s         uint16
 	Count50           uint16
 	Gekis             uint16
 	Katus             uint16
 	CountMiss         uint16
-	ReplayScore       int32
 	MaxCombo          uint16
+	Gamemode          byte
 	PerfectCombo      bool
-	Mods              int32
-	Timestamp         time.Time
-	OnlineScoreId     int64
-	AdditionalModInfo float64
+	BeatmapMD5Hash    string
+	PlayerName        string
+	ReplayMD5Hash     string
 }
 
 func ParseCollectionsDB(filename string) (*Collections, error) {
-	file, err := os.Open(filename)
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func readCollection(r io.Reader) (*Collection, error) {
 }
 
 func ParseScoresDB(filename string) (*Scores, error) {
-	file, err := os.Open(filename)
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
 		return nil, err
 	}
@@ -774,7 +774,7 @@ func readTimingPoints(r io.Reader) ([]TimingPoint, error) {
 }
 
 func ParseOsuDB(filename string) (*OsuDB, error) {
-	file, err := os.Open(filename)
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
 		return nil, err
 	}
@@ -818,6 +818,7 @@ func ParseOsuDB(filename string) (*OsuDB, error) {
 	for i := 0; i < int(numberOfBeatmaps); i++ {
 		beatmap, err := readBeatmap(reader, version)
 		if err != nil {
+			//fmt.Println(err)
 			return nil, err
 		}
 		beatmaps = append(beatmaps, beatmap)
