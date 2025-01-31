@@ -1,4 +1,4 @@
-# OsuParser [![Go](https://github.com/JuLi0n21/go-osu-parser/actions/workflows/go.yml/badge.svg)](https://github.com/JuLi0n21/go-osu-parser/actions/workflows/go.yml)
+# OsuParser [![Pipeline](https://github.com/JuLi0n21/go-osu-parser/actions/workflows/go.yml/badge.svg)](https://github.com/JuLi0n21/go-osu-parser/actions/workflows/go.yml)
 
 Small go based Library to Read osu! dbs and .osu files
 
