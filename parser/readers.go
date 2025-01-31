@@ -1,4 +1,4 @@
-package osuParser
+package parser
 
 import (
 	"encoding/binary"
