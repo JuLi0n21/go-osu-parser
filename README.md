@@ -6,6 +6,10 @@ Small go based Library to Read osu! dbs and .osu files
 import "github.com/juli0n21/go-osu-parser/parser"
 ```
 
+```bash
+get github.com/juli0n21/go-osu-parser@latest
+```
+
 [Examples](./pkg/example.go)
 
 Currently Supported files:
