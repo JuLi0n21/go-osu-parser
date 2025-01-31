@@ -39,14 +39,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse osu!.db: %v", err)
 	}
-	fmt.Println("Parsed in: ", time.Since(start))
+	fmt.Println("database: Parsed in: ", time.Since(start))
 
 	start = time.Now()
 	collection, err := parser.ParseCollectionsDB(collname)
 	if err != nil {
 		log.Fatalf("Failed to parse collections!.db: %v", err)
 	}
-	fmt.Println("Parsed in: ", time.Since(start))
+	fmt.Println("collections: Parsed in: ", time.Since(start))
 
 	start = time.Now()
 	scores, err := parser.ParseScoresDB(scoresname)
@@ -54,7 +54,7 @@ func main() {
 		log.Fatalf("Failed to parse scores!.db: %v", err)
 	}
 
-	fmt.Println("Parsed in: ", time.Since(start))
+	fmt.Println("scores: Parsed in: ", time.Since(start))
 
 	fmt.Println("Collections", collection.NumberOfCollections)
 	fmt.Println("Scores", scores.NumberOfScores)
@@ -93,7 +93,7 @@ func main() {
 		}(beatmap)
 	}
 
-	fmt.Printf("Parsed: %s beatmaps", len(db.Beatmaps))
+	fmt.Printf("Parsed: %d beatmaps!\n", len(db.Beatmaps))
 	wg.Wait()
 
 	fmt.Println("All .osu files parsed in: ", time.Since(start))
