@@ -26,7 +26,7 @@ jobs:
 
     - name: Generate Go documentation
       run: |
-        gomarkdoc -o README.md
+        gomarkdoc -v ./parser -o DOKUMENTATION.md
 
     - name: Commit generated documentation
       run: |
