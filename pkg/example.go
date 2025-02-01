@@ -69,18 +69,22 @@ func main() {
 	var SotarksCount int
 	var TotalSotarksCircels int
 
+	sem := make(chan struct{}, 100)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
 	start = time.Now()
 	for _, beatmap := range db.Beatmaps {
+		sem <- struct{}{}
 		wg.Add(1)
 		go func(beatmap *parser.Beatmap) {
-			defer wg.Done()
+			defer func() {
+				<-sem
+				wg.Done()
+			}()
 
 			b, err := parser.ParseOsuFile(fmt.Sprintf("G://Anwendungen/osu!/Songs/%s/%s", beatmap.FolderName, beatmap.FileName))
 			if err != nil {
-				log.Printf("Failed to parse osuFile: %v", err)
 				return
 			}
 
@@ -93,10 +97,13 @@ func main() {
 		}(beatmap)
 	}
 
-	fmt.Printf("Parsed: %d beatmaps!\n", len(db.Beatmaps))
 	wg.Wait()
+	fmt.Printf("Parsed: %d beatmaps!\n", len(db.Beatmaps))
 
-	fmt.Println("All .osu files parsed in: ", time.Since(start))
+	totalTime := time.Since(start)
+	averageTime := totalTime / time.Duration(len(db.Beatmaps))
+
+	fmt.Println("All .osu files parsed in: ", totalTime, ". ~per file: ", averageTime)
 	fmt.Printf("Found %d Sotarks Diffs. With a total of %d circles/sliders", SotarksCount, TotalSotarksCircels)
 
 	pprof.WriteHeapProfile(f)

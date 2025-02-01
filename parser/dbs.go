@@ -3,6 +3,7 @@ package parser
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -168,6 +169,13 @@ const (
 )
 
 func ParseCollectionsDB(filename string) (*Collections, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %v", r)
+		}
+	}()
+
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
 		return nil, err
@@ -193,6 +201,10 @@ func ParseCollectionsDB(filename string) (*Collections, error) {
 			return nil, err
 		}
 		collections = append(collections, collection)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &Collections{
@@ -233,6 +245,13 @@ func readCollection(r io.Reader) (*Collection, error) {
 }
 
 func ParseScoresDB(filename string) (*Scores, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %v", r)
+		}
+	}()
+
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
 		return nil, err
@@ -258,6 +277,10 @@ func ParseScoresDB(filename string) (*Scores, error) {
 			return nil, err
 		}
 		beatmaps = append(beatmaps, beatmap)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &Scores{
@@ -838,6 +861,13 @@ func readTimingPoints(r io.Reader) ([]TimingPoint, error) {
 }
 
 func ParseOsuDB(filename string) (*OsuDB, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %v", r)
+		}
+	}()
+
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
 		return nil, err
@@ -888,6 +918,10 @@ func ParseOsuDB(filename string) (*OsuDB, error) {
 	}
 
 	userPermissions, err := readInt(reader)
+	if err != nil {
+		return nil, err
+	}
+
 	if err != nil {
 		return nil, err
 	}

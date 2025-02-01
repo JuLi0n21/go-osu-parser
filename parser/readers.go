@@ -123,7 +123,7 @@ func readDateTime(ticks int64) time.Time {
 }
 
 func readIntDoublePairs(r io.Reader) (map[int]float64, error) {
-	count, err := readLong(r)
+	count, err := readInt(r)
 	if err != nil {
 		return nil, err
 	}
@@ -134,21 +134,14 @@ func readIntDoublePairs(r io.Reader) (map[int]float64, error) {
 		if err := binary.Read(r, binary.LittleEndian, &flag); err != nil {
 			return nil, err
 		}
-		if flag != 0x08 {
-			return nil, errors.New("invalid Int-Double pair flag")
-		}
 
 		intVal, err := readInt(r)
 		if err != nil {
 			return nil, err
 		}
 
-		var doubleFlag byte
-		if err := binary.Read(r, binary.LittleEndian, &doubleFlag); err != nil {
+		if err := binary.Read(r, binary.LittleEndian, &flag); err != nil {
 			return nil, err
-		}
-		if doubleFlag != 0x0d {
-			return nil, errors.New("invalid Double flag in Int-Double pair")
 		}
 
 		doubleVal, err := readDouble(r)
@@ -170,11 +163,9 @@ func readIntFloatPairs(r io.Reader) (map[int]float32, error) {
 	pairs := make(map[int]float32)
 	for i := 0; i < int(count); i++ {
 		var flag byte
+		//read flag but skip validation
 		if err := binary.Read(r, binary.LittleEndian, &flag); err != nil {
 			return nil, err
-		}
-		if flag != 0x08 {
-			return nil, errors.New("invalid Int-Float pair flag")
 		}
 
 		intVal, err := readInt(r)
@@ -182,12 +173,9 @@ func readIntFloatPairs(r io.Reader) (map[int]float32, error) {
 			return nil, err
 		}
 
-		var floatFlag byte
-		if err := binary.Read(r, binary.LittleEndian, &floatFlag); err != nil {
+		//read flag but skip validation
+		if err := binary.Read(r, binary.LittleEndian, &flag); err != nil {
 			return nil, err
-		}
-		if floatFlag != 0x0c {
-			return nil, errors.New("invalid Float flag in Int-Float pair")
 		}
 
 		floatVal, err := readSingle(r)

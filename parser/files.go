@@ -164,10 +164,9 @@ func ParseOsuFile(filename string) (*OsuFile, error) {
 
 func parseOsuFile(filename string) (*OsuFile, error) {
 	var err error
-	var lineNumber int
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("%v in line %d", r, lineNumber)
+			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
 
@@ -188,8 +187,7 @@ func parseOsuFile(filename string) (*OsuFile, error) {
 	osuFile := &OsuFile{}
 	currentSection := ""
 
-	for i, lineStr := range lines {
-		lineNumber = i
+	for _, lineStr := range lines {
 
 		line := strings.TrimSpace(string(lineStr))
 
