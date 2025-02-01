@@ -26,6 +26,12 @@ func TestParseOsuDb(t *testing.T) {
 		t.Errorf("Beatmapid mismatch: %d, expected: 1853515", db.Beatmaps[0].BeatmapID)
 	}
 
+	starRating := 9.92
+	mods := parser.HardRock | parser.Hidden | parser.DoubleTime
+	if db.Beatmaps[0].StarRatingsStandard[int(mods)]-float32(starRating) > 0.01 && db.Beatmaps[0].StarRatingsStandard[int(mods)] < -0.01 {
+		t.Errorf("Starratign doesnt not match: %f, expected: 9.92", db.Beatmaps[0].StarRatingsStandard[int(mods)])
+	}
+
 }
 
 func TestParseCollectionDb(t *testing.T) {

@@ -72,10 +72,10 @@ type Beatmap struct {
 	StarRatingsTaiko       map[int]float32
 	StarRatingsCTB         map[int]float32
 	StarRatingsMania       map[int]float32
-	StarRatingsStandardOld map[int]int64
-	StarRatingsTaikoOld    map[int]int64
-	StarRatingsCTBOld      map[int]int64
-	StarRatingsManiaOld    map[int]int64
+	StarRatingsStandardOld map[int]float64
+	StarRatingsTaikoOld    map[int]float64
+	StarRatingsCTBOld      map[int]float64
+	StarRatingsManiaOld    map[int]float64
 	TimingPoints           []TimingPoint
 	SizeInBytes            *int32
 	UnknownShort           *uint16
@@ -131,6 +131,41 @@ type Score struct {
 	PlayerName        string
 	ReplayMD5Hash     string
 }
+
+type Mods int
+
+const (
+	NoMod       Mods = 0
+	Easy        Mods = 1 << iota // 1
+	NoFail                       // 2
+	HalfTime                     // 4
+	HardRock                     // 8
+	SuddenDeath                  // 16
+	DoubleTime                   // 32
+	Relax                        // 64
+	Hidden                       // 128
+	Flashlight                   // 256
+	Autoplay                     // 512
+	SpunOut                      // 1024
+	Relax2                       // 2048 (Autopilot)
+	Perfect                      // 4096
+	Key4                         // 8192
+	Key5                         // 16384
+	Key6                         // 32768
+	Key7                         // 65536
+	Key8                         // 131072
+	FadeIn                       // 262144
+	Random                       // 524288
+	Cinema                       // 1048576
+	Target                       // 2097152
+	Key9                         // 4194304
+	Key10                        // 8388608
+	Key1                         // 16777216
+	Key3                         // 33554432
+	Key2                         // 67108864
+	ScoreV2                      // 134217728
+	Mirror                       // 268435456
+)
 
 func ParseCollectionsDB(filename string) (*Collections, error) {
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)

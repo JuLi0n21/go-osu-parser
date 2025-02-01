@@ -122,13 +122,13 @@ func readDateTime(ticks int64) time.Time {
 	return time.Unix(seconds, nanoseconds).UTC()
 }
 
-func readIntDoublePairs(r io.Reader) (map[int]int64, error) {
-	count, err := readInt(r)
+func readIntDoublePairs(r io.Reader) (map[int]float64, error) {
+	count, err := readLong(r)
 	if err != nil {
 		return nil, err
 	}
 
-	pairs := make(map[int]int64)
+	pairs := make(map[int]float64)
 	for i := 0; i < int(count); i++ {
 		var flag byte
 		if err := binary.Read(r, binary.LittleEndian, &flag); err != nil {
@@ -156,7 +156,7 @@ func readIntDoublePairs(r io.Reader) (map[int]int64, error) {
 			return nil, err
 		}
 
-		pairs[int(intVal)] = int64(doubleVal)
+		pairs[int(intVal)] = doubleVal
 	}
 	return pairs, nil
 }
