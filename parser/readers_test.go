@@ -14,6 +14,10 @@ func TestParseOsuFile(t *testing.T) {
 		t.Errorf("Parsing osu file failed: %v", err)
 	}
 
+	if osuFile.Version != 14 {
+		t.Errorf("Expected Version '14', but got '%d'", osuFile.Version)
+	}
+
 	if osuFile.General.AudioFilename != "audio.mp3" {
 		t.Errorf("Expected AudioFilename 'audio.mp3', but got '%s'", osuFile.General.AudioFilename)
 	}
