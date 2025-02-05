@@ -190,13 +190,17 @@ func parseOsuFile(filename string) (*OsuFile, error) {
 	for i, lineStr := range lines {
 
 		if i == 0 {
-			versionStr := string(lineStr[17:])
-			versionStr = strings.TrimSpace(versionStr)
-			osuFile.Version, err = strconv.Atoi(versionStr)
-			if err != nil {
-				return nil, err
+			if len(lineStr) > 17 {
+				versionStr := string(lineStr[17:])
+				versionStr = strings.TrimSpace(versionStr)
+				osuFile.Version, err = strconv.Atoi(versionStr)
+				if err != nil {
+					return nil, err
+				}
+				//empty file?
 			}
 		}
+
 		line := strings.TrimSpace(string(lineStr))
 
 		if len(line) == 0 || strings.HasPrefix(line, "//") {
