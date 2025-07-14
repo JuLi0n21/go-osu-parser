@@ -3,6 +3,7 @@ package parser
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -150,12 +151,12 @@ func ParseOsuFile(filename string) (*OsuFile, error) {
 	}()
 
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return nil, err
+		return nil, fmt.Errorf("file not found: %s, error: %w", filename, err)
 	}
 
 	OsuFile, err := parseOsuFile(filename)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse osufile: %s, error :%w", filename, err)
 	}
 
 	return OsuFile, nil
@@ -166,13 +167,13 @@ func parseOsuFile(filename string) (*OsuFile, error) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic: %v", r)
+			err = fmt.Errorf("failed to parse osufile: %s, panic: %v", filename, r)
 		}
 	}()
 
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open file: %s, error: %w", filename, err)
 	}
 	defer file.Close()
 
@@ -180,124 +181,197 @@ func parseOsuFile(filename string) (*OsuFile, error) {
 
 	byteData, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read bytedata: %w", err)
 	}
 
-	lines := bytes.Split([]byte(byteData), []byte{'\n'})
+	lines := bytes.Split(byteData, []byte{'\n'})
 	osuFile := &OsuFile{}
 	currentSection := ""
+	var parseErrs []error
 
 	for i, lineStr := range lines {
-
 		if i == 0 {
 			if len(lineStr) > 17 {
 				versionStr := string(lineStr[17:])
 				versionStr = strings.TrimSpace(versionStr)
 				osuFile.Version, err = strconv.Atoi(versionStr)
 				if err != nil {
-					return nil, err
+					parseErrs = append(parseErrs, fmt.Errorf("failed to parse version: %w", err))
 				}
-				//empty file?
 			}
 		}
 
 		line := strings.TrimSpace(string(lineStr))
-
 		if len(line) == 0 || strings.HasPrefix(line, "//") {
 			continue
 		}
 
-		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+		if strings.HasPrefix(line, "[") {
 			currentSection = strings.ToLower(line[1 : len(line)-1])
 			continue
 		}
 
 		switch currentSection {
 		case "general":
-			parseGeneral(line, &osuFile.General)
+			if e := parseGeneral(line, &osuFile.General); e != nil {
+				parseErrs = append(parseErrs, fmt.Errorf("general: %w", e))
+			}
 		case "editor":
-			parseEditor(line, &osuFile.Editor)
+			if e := parseEditor(line, &osuFile.Editor); e != nil {
+				parseErrs = append(parseErrs, fmt.Errorf("editor: %w", e))
+			}
 		case "metadata":
-			parseMetadata(line, &osuFile.Metadata)
+			if e := parseMetadata(line, &osuFile.Metadata); e != nil {
+				parseErrs = append(parseErrs, fmt.Errorf("metadata: %w", e))
+			}
 		case "difficulty":
-			parseDifficulty(line, &osuFile.Difficulty)
+			if e := parseDifficulty(line, &osuFile.Difficulty); e != nil {
+				parseErrs = append(parseErrs, fmt.Errorf("difficulty: %w", e))
+			}
 		case "events":
-			parseEvents(line, &osuFile.Events)
+			if e := parseEvents(line, &osuFile.Events); e != nil {
+				parseErrs = append(parseErrs, fmt.Errorf("events: %w", e))
+			}
 		case "timingpoints":
-			parseTimingPoints(line, &osuFile.TimingPointsFile)
+			if e := parseTimingPoints(line, &osuFile.TimingPointsFile); e != nil {
+				parseErrs = append(parseErrs, fmt.Errorf("timingpoints: %w", e))
+			}
 		case "colours":
-			parseColours(line, &osuFile.Colours)
+			if e := parseColours(line, &osuFile.Colours); e != nil {
+				parseErrs = append(parseErrs, fmt.Errorf("colours: %w", e))
+			}
 		case "hitobjects":
-			parseHitObjects(line, &osuFile.HitObjects)
+			if e := parseHitObjects(line, &osuFile.HitObjects); e != nil {
+				parseErrs = append(parseErrs, fmt.Errorf("hitobjects: %w", e))
+			}
 		}
+	}
+
+	if len(parseErrs) > 0 {
+		return osuFile, errors.Join(parseErrs...)
 	}
 
 	return osuFile, nil
 }
 
-func parseGeneral(line string, general *General) {
+func parseGeneral(line string, general *General) error {
 	parts := strings.SplitN(line, ":", 2)
 	if len(parts) != 2 {
-		return
+		return fmt.Errorf("invalid line format: %q", line)
 	}
 	key := strings.TrimSpace(parts[0])
 	value := strings.TrimSpace(parts[1])
 
+	var err error
 	switch key {
 	case "AudioFilename":
 		general.AudioFilename = value
+
 	case "AudioLeadIn":
-		general.AudioLeadIn, _ = strconv.Atoi(value)
+		var v int
+		v, err = strconv.Atoi(value)
+		general.AudioLeadIn = v
+
 	case "PreviewTime":
-		general.PreviewTime, _ = strconv.Atoi(value)
+		var v int
+		v, err = strconv.Atoi(value)
+		general.PreviewTime = v
+
 	case "Countdown":
-		general.Countdown, _ = strconv.Atoi(value)
+		var v int
+		v, err = strconv.Atoi(value)
+		general.Countdown = v
+
 	case "SampleSet":
 		general.SampleSet = value
+
 	case "StackLeniency":
-		general.StackLeniency, _ = strconv.ParseFloat(value, 64)
+		var v float64
+		v, err = strconv.ParseFloat(value, 64)
+		general.StackLeniency = v
+
 	case "Mode":
-		general.Mode, _ = strconv.Atoi(value)
+		var v int
+		v, err = strconv.Atoi(value)
+		general.Mode = v
+
 	case "LetterboxInBreaks":
-		general.LetterboxInBreaks, _ = strconv.Atoi(value)
+		var v int
+		v, err = strconv.Atoi(value)
+		general.LetterboxInBreaks = v
+
 	case "WidescreenStoryboard":
-		general.WidescreenStoryboard, _ = strconv.Atoi(value)
+		var v int
+		v, err = strconv.Atoi(value)
+		general.WidescreenStoryboard = v
 	}
+
+	if err != nil {
+		return fmt.Errorf("failed to parse %q: %w", key, err)
+	}
+	return nil
 }
 
-func parseEditor(line string, editor *Editor) {
+func parseEditor(line string, editor *Editor) error {
 	parts := strings.SplitN(line, ":", 2)
 	if len(parts) != 2 {
-		return
+		return fmt.Errorf("invalid line format: %q", line)
 	}
 	key := strings.TrimSpace(parts[0])
 	value := strings.TrimSpace(parts[1])
 
+	var err error
 	switch key {
 	case "Bookmarks":
 		for _, v := range strings.Split(value, ",") {
-			bookmark, _ := strconv.Atoi(v)
+			if v == "" {
+				continue
+			}
+			var bookmark int
+			bookmark, err = strconv.Atoi(strings.TrimSpace(v))
+			if err != nil {
+				return fmt.Errorf("failed to parse bookmark %q: %w", v, err)
+			}
 			editor.Bookmarks = append(editor.Bookmarks, bookmark)
 		}
+
 	case "DistanceSpacing":
-		editor.DistanceSpacing, _ = strconv.ParseFloat(value, 64)
+		editor.DistanceSpacing, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse DistanceSpacing %q: %w", value, err)
+		}
+
 	case "BeatDivisor":
-		editor.BeatDivisor, _ = strconv.Atoi(value)
+		editor.BeatDivisor, err = strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse BeatDivisor %q: %w", value, err)
+		}
+
 	case "GridSize":
-		editor.GridSize, _ = strconv.Atoi(value)
+		editor.GridSize, err = strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse GridSize %q: %w", value, err)
+		}
+
 	case "TimelineZoom":
-		editor.TimelineZoom, _ = strconv.ParseFloat(value, 64)
+		editor.TimelineZoom, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse TimelineZoom %q: %w", value, err)
+		}
 	}
+
+	return nil
 }
 
-func parseMetadata(line string, metadata *Metadata) {
+func parseMetadata(line string, metadata *Metadata) error {
 	parts := strings.SplitN(line, ":", 2)
 	if len(parts) != 2 {
-		return
+		return fmt.Errorf("invalid line format: %q", line)
 	}
 	key := strings.TrimSpace(parts[0])
 	value := strings.TrimSpace(parts[1])
 
+	var err error
 	switch key {
 	case "Title":
 		metadata.Title = value
@@ -316,41 +390,68 @@ func parseMetadata(line string, metadata *Metadata) {
 	case "Tags":
 		metadata.Tags = strings.Split(value, " ")
 	case "BeatmapID":
-		metadata.BeatmapID, _ = strconv.Atoi(value)
+		metadata.BeatmapID, err = strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse BeatmapID %q: %w", value, err)
+		}
 	case "BeatmapSetID":
-		metadata.BeatmapSetID, _ = strconv.Atoi(value)
+		metadata.BeatmapSetID, err = strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse BeatmapSetID %q: %w", value, err)
+		}
 	}
-}
 
-func parseDifficulty(line string, difficulty *Difficulty) {
+	return nil
+}
+func parseDifficulty(line string, difficulty *Difficulty) error {
 	parts := strings.SplitN(line, ":", 2)
 	if len(parts) != 2 {
-		return
+		return fmt.Errorf("invalid line format: %q", line)
 	}
 	key := strings.TrimSpace(parts[0])
 	value := strings.TrimSpace(parts[1])
 
+	var err error
 	switch key {
 	case "HPDrainRate":
-		difficulty.HPDrainRate, _ = strconv.ParseFloat(value, 64)
+		difficulty.HPDrainRate, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse HPDrainRate %q: %w", value, err)
+		}
 	case "CircleSize":
-		difficulty.CircleSize, _ = strconv.ParseFloat(value, 64)
+		difficulty.CircleSize, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse CircleSize %q: %w", value, err)
+		}
 	case "OverallDifficulty":
-		difficulty.OverallDifficulty, _ = strconv.ParseFloat(value, 64)
+		difficulty.OverallDifficulty, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse OverallDifficulty %q: %w", value, err)
+		}
 	case "ApproachRate":
-		difficulty.ApproachRate, _ = strconv.ParseFloat(value, 64)
+		difficulty.ApproachRate, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse ApproachRate %q: %w", value, err)
+		}
 	case "SliderMultiplier":
-		difficulty.SliderMultiplier, _ = strconv.ParseFloat(value, 64)
+		difficulty.SliderMultiplier, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse SliderMultiplier %q: %w", value, err)
+		}
 	case "SliderTickRate":
-		difficulty.SliderTickRate, _ = strconv.ParseFloat(value, 64)
+		difficulty.SliderTickRate, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse SliderTickRate %q: %w", value, err)
+		}
 	}
+
+	return nil
 }
 
-func parseEvents(line string, events *[]Event) {
+func parseEvents(line string, events *[]Event) error {
 	parts := strings.Split(line, ",")
-
 	if len(parts) < 1 {
-		return
+		return fmt.Errorf("invalid event line: %q", line)
 	}
 
 	eventType := parts[0]
@@ -358,7 +459,11 @@ func parseEvents(line string, events *[]Event) {
 	var eventParams []string
 
 	if len(parts) > 1 {
-		startTime, _ = strconv.Atoi(parts[1])
+		var err error
+		startTime, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return fmt.Errorf("failed to parse StartTime from %q: %w", parts[1], err)
+		}
 	}
 
 	if len(parts) > 2 {
@@ -370,22 +475,55 @@ func parseEvents(line string, events *[]Event) {
 		StartTime:   startTime,
 		EventParams: eventParams,
 	})
+
+	return nil
 }
 
-func parseTimingPoints(line string, timingPoints *[]TimingPointFile) {
+func parseTimingPoints(line string, timingPoints *[]TimingPointFile) error {
 	parts := strings.Split(line, ",")
 	if len(parts) < 8 {
-		return
+		return fmt.Errorf("invalid timing point line (expected 8+ parts): %q", line)
 	}
 
-	time, _ := strconv.Atoi(parts[0])
-	beatLength, _ := strconv.ParseFloat(parts[1], 64)
-	meter, _ := strconv.Atoi(parts[2])
-	sampleSet, _ := strconv.Atoi(parts[3])
-	sampleIndex, _ := strconv.Atoi(parts[4])
-	volume, _ := strconv.Atoi(parts[5])
-	uninherited, _ := strconv.Atoi(parts[6])
-	effects, _ := strconv.Atoi(parts[7])
+	time, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return fmt.Errorf("failed to parse Time from %q: %w", parts[0], err)
+	}
+
+	beatLength, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse BeatLength from %q: %w", parts[1], err)
+	}
+
+	meter, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return fmt.Errorf("failed to parse Meter from %q: %w", parts[2], err)
+	}
+
+	sampleSet, err := strconv.Atoi(parts[3])
+	if err != nil {
+		return fmt.Errorf("failed to parse SampleSet from %q: %w", parts[3], err)
+	}
+
+	sampleIndex, err := strconv.Atoi(parts[4])
+	if err != nil {
+		return fmt.Errorf("failed to parse SampleIndex from %q: %w", parts[4], err)
+	}
+
+	volume, err := strconv.Atoi(parts[5])
+	if err != nil {
+		return fmt.Errorf("failed to parse Volume from %q: %w", parts[5], err)
+	}
+
+	uninherited, err := strconv.Atoi(parts[6])
+	if err != nil {
+		return fmt.Errorf("failed to parse Uninherited from %q: %w", parts[6], err)
+	}
+
+	effects, err := strconv.Atoi(parts[7])
+	if err != nil {
+		return fmt.Errorf("failed to parse Effects from %q: %w", parts[7], err)
+	}
 
 	*timingPoints = append(*timingPoints, TimingPointFile{
 		Time:        time,
@@ -397,24 +535,36 @@ func parseTimingPoints(line string, timingPoints *[]TimingPointFile) {
 		Uninherited: uninherited,
 		Effects:     effects,
 	})
+
+	return nil
 }
 
-func parseColours(line string, colours *[]Colour) {
+func parseColours(line string, colours *[]Colour) error {
 	parts := strings.SplitN(line, ":", 2)
 	if len(parts) != 2 {
-		return
+		return fmt.Errorf("invalid colour line (missing colon): %q", line)
 	}
+
 	key := strings.TrimSpace(parts[0])
 	value := strings.TrimSpace(parts[1])
 	rgb := strings.Split(value, ",")
 
 	if len(rgb) != 3 {
-		return
+		return fmt.Errorf("invalid RGB value (expected 3 components): %q", value)
 	}
 
-	r, _ := strconv.Atoi(rgb[0])
-	g, _ := strconv.Atoi(rgb[1])
-	b, _ := strconv.Atoi(rgb[2])
+	r, err := strconv.Atoi(strings.TrimSpace(rgb[0]))
+	if err != nil {
+		return fmt.Errorf("failed to parse R from %q: %w", rgb[0], err)
+	}
+	g, err := strconv.Atoi(strings.TrimSpace(rgb[1]))
+	if err != nil {
+		return fmt.Errorf("failed to parse G from %q: %w", rgb[1], err)
+	}
+	b, err := strconv.Atoi(strings.TrimSpace(rgb[2]))
+	if err != nil {
+		return fmt.Errorf("failed to parse B from %q: %w", rgb[2], err)
+	}
 
 	switch {
 	case strings.HasPrefix(key, "Combo"):
@@ -423,25 +573,49 @@ func parseColours(line string, colours *[]Colour) {
 		*colours = append(*colours, Colour{SliderTrackOverride: []int{r, g, b}})
 	case key == "SliderBorder":
 		*colours = append(*colours, Colour{SliderBorder: []int{r, g, b}})
+	default:
+		return fmt.Errorf("unrecognized colour key: %q", key)
 	}
+
+	return nil
 }
 
-func parseHitObjects(line string, hitObjects *[]HitObject) {
+func parseHitObjects(line string, hitObjects *[]HitObject) error {
 	parts := strings.Split(line, ",")
 	if len(parts) < 5 {
-		return
+		return fmt.Errorf("invalid hit object line (expected at least 5 parts): %q", line)
 	}
 
-	x, _ := strconv.ParseFloat(parts[0], 64)
-	y, _ := strconv.ParseFloat(parts[1], 64)
-	time, _ := strconv.ParseFloat(parts[2], 64)
-	objectType, _ := strconv.Atoi(parts[3])
-	hitSound, _ := strconv.Atoi(parts[4])
+	x, err := strconv.ParseFloat(parts[0], 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse X from %q: %w", parts[0], err)
+	}
+
+	y, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse Y from %q: %w", parts[1], err)
+	}
+
+	time, err := strconv.ParseFloat(parts[2], 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse Time from %q: %w", parts[2], err)
+	}
+
+	objectType, err := strconv.Atoi(parts[3])
+	if err != nil {
+		return fmt.Errorf("failed to parse Type from %q: %w", parts[3], err)
+	}
+
+	hitSound, err := strconv.Atoi(parts[4])
+	if err != nil {
+		return fmt.Errorf("failed to parse HitSound from %q: %w", parts[4], err)
+	}
 
 	objectParams := ""
 	if len(parts) > 5 {
 		objectParams = parts[5]
 	}
+
 	hitSample := ""
 	if len(parts) > 6 {
 		hitSample = parts[6]
@@ -456,4 +630,6 @@ func parseHitObjects(line string, hitObjects *[]HitObject) {
 		ObjectParams: objectParams,
 		HitSample:    hitSample,
 	})
+
+	return nil
 }

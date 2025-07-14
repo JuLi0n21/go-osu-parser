@@ -172,13 +172,13 @@ func ParseCollectionsDB(filename string) (*Collections, error) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic: %v", r)
+			err = fmt.Errorf("failed to parse %s, panic: %v", filename, r)
 		}
 	}()
 
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to openfile: %s, error: %w", filename, err)
 	}
 	defer file.Close()
 
@@ -186,19 +186,19 @@ func ParseCollectionsDB(filename string) (*Collections, error) {
 
 	version, err := readInt(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read version: %w", err)
 	}
 
 	collectionCount, err := readInt(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read collection count: %w", err)
 	}
 
 	collections := make([]*Collection, 0, collectionCount)
 	for i := 0; i < int(collectionCount); i++ {
 		collection, err := readCollection(reader)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to readCollection: %w", err)
 		}
 		collections = append(collections, collection)
 	}
@@ -219,19 +219,19 @@ func readCollection(r io.Reader) (*Collection, error) {
 
 	name, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read name: %w", err)
 	}
 
 	beatmapCount, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read count: %w", err)
 	}
 
 	beatmaps := make([]*string, 0, beatmapCount)
 	for i := 0; i < int(beatmapCount); i++ {
 		beatmap, err := readString(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read beatmap: %w", err)
 		}
 		beatmaps = append(beatmaps, &beatmap)
 	}
@@ -248,13 +248,13 @@ func ParseScoresDB(filename string) (*Scores, error) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic: %v", r)
+			err = fmt.Errorf("failed to parse score: %s, panic: %v", filename, r)
 		}
 	}()
 
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open file: %s, error: %w", filename, err)
 	}
 	defer file.Close()
 
@@ -262,25 +262,25 @@ func ParseScoresDB(filename string) (*Scores, error) {
 
 	version, err := readInt(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read version: %w", err)
 	}
 
 	scoreCount, err := readInt(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read score count: %w", err)
 	}
 
 	beatmaps := make([]*BeatmapScores, 0, scoreCount)
 	for i := 0; i < int(scoreCount); i++ {
 		beatmap, err := readBeatmapScore(reader)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read beatmap score: %w", err)
 		}
 		beatmaps = append(beatmaps, beatmap)
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("something went wrong: %w", err)
 	}
 
 	return &Scores{
@@ -294,19 +294,19 @@ func ParseScoresDB(filename string) (*Scores, error) {
 func readBeatmapScore(r io.Reader) (*BeatmapScores, error) {
 	hash, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read hash: %w", err)
 	}
 
 	scoreCount, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read scorecount: %w", err)
 	}
 
 	scores := make([]*Score, 0, scoreCount)
 	for i := 0; i < int(scoreCount); i++ {
 		score, err := readScore(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read scores: %w", err)
 		}
 		scores = append(scores, score)
 	}
@@ -323,76 +323,76 @@ func readScore(r io.Reader) (*Score, error) {
 
 	gamemode, err := readByte(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read gamemode: %w", err)
 	}
 
 	version, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read version: %w", err)
 	}
 
 	beatmapMD5Hash, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read hash: %w", err)
 	}
 
 	playername, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read playername: %w", err)
 	}
 
 	replayMD5Hash, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read replay hash: %w", err)
 	}
 
 	count300, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read 300 count: %w", err)
 	}
 
 	count100, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read 100 count: %w", err)
 	}
 
 	count50, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read 50 count: %w", err)
 	}
 
 	gekis, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read gekis: %w", err)
 	}
 
 	katus, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read katus: %w", err)
 	}
 
 	countMiss, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read miss count: %w", err)
 	}
 
 	replayScore, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read replay score: %w", err)
 	}
 	maxcombo, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read max combo: %w", err)
 	}
 
 	perfectCombo, err := readBoolean(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read full combo: %w", err)
 	}
 
 	mods, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read mods: %w", err)
 	}
 
 	//EmptyString
@@ -400,26 +400,26 @@ func readScore(r io.Reader) (*Score, error) {
 
 	ticks, err := readLong(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read ticks: %w", err)
 	}
 	timestamp := readDateTime(ticks)
 
 	//-1
 	_, err = readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read -1: %w", err)
 	}
 
 	onlineScoreId, err := readLong(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read online score id: %w", err)
 	}
 
 	var additionalModInfo float64
 	if mods<<23 == 1 {
 		additionalModInfo, err = readDouble(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read additional mod info: %w", err)
 		}
 
 	}
@@ -452,377 +452,377 @@ func readBeatmap(r io.Reader, version int32) (*Beatmap, error) {
 	if version < 20191106 {
 		sizeInBytes, err := readInt(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read beatmap size: %w", err)
 		}
 		beatmap.SizeInBytes = &sizeInBytes
 	}
 
 	artist, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read artist: %w", err)
 	}
 	beatmap.Artist = artist
 
 	artistUnicode, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read artist unicode: %w", err)
 	}
 	beatmap.ArtistUnicode = artistUnicode
 
 	songTitle, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read songtitle: %w", err)
 	}
 	beatmap.SongTitle = songTitle
 
 	songTitleUnicode, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read songtitle unicode: %w", err)
 	}
 	beatmap.SongTitleUnicode = songTitleUnicode
 
 	creator, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read creator: %w", err)
 	}
 	beatmap.Creator = creator
 
 	difficulty, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read difficulty: %w", err)
 	}
 	beatmap.Difficulty = difficulty
 
 	audioFileName, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read audiofilename: %w", err)
 	}
 	beatmap.AudioFileName = audioFileName
 
 	md5Hash, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read hash: %w", err)
 	}
 	beatmap.MD5Hash = md5Hash
 
 	osuFileName, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read filename: %w", err)
 	}
 	beatmap.FileName = osuFileName
 
 	var rankedStatus byte
 	if err := binary.Read(r, binary.LittleEndian, &rankedStatus); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read rankstatus: %w", err)
 	}
 	beatmap.RankedStatus = rankedStatus
 
 	numberOfHitCircles, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read hitcircle count: %w", err)
 	}
 	beatmap.NumberOfHitCircles = numberOfHitCircles
 
 	numberOfSliders, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read slidercount: %w", err)
 	}
 	beatmap.NumberOfSliders = numberOfSliders
 
 	numberOfSpinners, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read spinner count: %w", err)
 	}
 	beatmap.NumberOfSpinners = numberOfSpinners
 
 	lastModificationTicks, err := readLong(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read last mod ticks: %w", err)
 	}
 	beatmap.LastModificationTime = lastModificationTicks
 
 	if version < 20140609 {
 		arByte, err := readShort(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read ar: %w", err)
 		}
 		arFloat := float32(arByte)
 		beatmap.ApproachRate = arFloat
 
 		csByte, err := readShort(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read cs: %w", err)
 		}
 		csFloat := float32(csByte)
 		beatmap.CircleSize = csFloat
 
 		hpDrainByte, err := readShort(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read hp: %w", err)
 		}
 		hpDrainFloat := float32(hpDrainByte)
 		beatmap.HPDrain = hpDrainFloat
 
 		odByte, err := readShort(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read od: %w", err)
 		}
 		odFloat := float32(odByte)
 		beatmap.OverallDifficulty = odFloat
 	} else {
 		ar, err := readSingle(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read ar: %w", err)
 		}
 		beatmap.ApproachRate = ar
 
 		cs, err := readSingle(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read cs: %w", err)
 		}
 		beatmap.CircleSize = cs
 
 		hpDrain, err := readSingle(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read hp: %w", err)
 		}
 		beatmap.HPDrain = hpDrain
 
 		od, err := readSingle(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read od: %w", err)
 		}
 		beatmap.OverallDifficulty = od
 	}
 
 	sliderVelocity, err := readDouble(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read slider velocity: %w", err)
 	}
 	beatmap.SliderVelocity = sliderVelocity
 
 	if version >= 20140609 && version < 20250107 {
 		stdStars, err := readIntDoublePairs(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read std star rating: %w", err)
 		}
 		beatmap.StarRatingsStandardOld = stdStars
 
 		taikoStars, err := readIntDoublePairs(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read taiko star rating: %w", err)
 		}
 		beatmap.StarRatingsTaikoOld = taikoStars
 
 		ctbStars, err := readIntDoublePairs(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read ctb star rating: %w", err)
 		}
 		beatmap.StarRatingsCTBOld = ctbStars
 
 		maniaStars, err := readIntDoublePairs(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read maniaStars: %w", err)
 		}
 		beatmap.StarRatingsManiaOld = maniaStars
 
 	} else if version >= 20250107 {
 		stdStars, err := readIntFloatPairs(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read std star rating: %w", err)
 		}
 		beatmap.StarRatingsStandard = stdStars
 
 		taikoStars, err := readIntFloatPairs(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read taiko star rating: %w", err)
 		}
 		beatmap.StarRatingsTaiko = taikoStars
 
 		ctbStars, err := readIntFloatPairs(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read ctb star rating: %w", err)
 		}
 		beatmap.StarRatingsCTB = ctbStars
 
 		maniaStars, err := readIntFloatPairs(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read mania star rating: %w", err)
 		}
 		beatmap.StarRatingsMania = maniaStars
 	}
 
 	drainTime, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read drain time: %w", err)
 	}
 	beatmap.DrainTime = drainTime
 
 	totalTime, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read total time: %w", err)
 	}
 	beatmap.TotalTime = totalTime
 
 	audioPreviewStartTime, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read audio preview start: %w", err)
 	}
 	beatmap.AudioPreviewStartTime = audioPreviewStartTime
 
 	timingPoints, err := readTimingPoints(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read timing points: %w", err)
 	}
 	beatmap.TimingPoints = timingPoints
 
 	difficultyID, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read difficulty id: %w", err)
 	}
 	beatmap.DifficultyID = difficultyID
 
 	beatmapID, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read beatmap id: %w", err)
 	}
 	beatmap.BeatmapID = beatmapID
 
 	threadID, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read thread id: %w", err)
 	}
 	beatmap.ThreadID = threadID
 
 	if err := binary.Read(r, binary.LittleEndian, &beatmap.GradeStandard); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read std grade: %w", err)
 	}
 	if err := binary.Read(r, binary.LittleEndian, &beatmap.GradeTaiko); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read taiko grade: %w", err)
 	}
 	if err := binary.Read(r, binary.LittleEndian, &beatmap.GradeCTB); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read ctb grade: %w", err)
 	}
 	if err := binary.Read(r, binary.LittleEndian, &beatmap.GradeMania); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read mania grade: %w", err)
 	}
 
 	localOffset, err := readShort(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read local offset: %w", err)
 	}
 	beatmap.LocalBeatmapOffset = localOffset
 
 	stackLeniency, err := readSingle(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read stack leniency: %w", err)
 	}
 	beatmap.StackLeniency = stackLeniency
 
 	if err := binary.Read(r, binary.LittleEndian, &beatmap.GameplayMode); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read game mode: %w", err)
 	}
 
 	songSource, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read song source: %w", err)
 	}
 	beatmap.SongSource = songSource
 
 	songTags, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read tags: %w", err)
 	}
 	beatmap.SongTags = songTags
 
 	onlineOffset, err := readShortSigned(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read online offset: %w", err)
 	}
 	beatmap.OnlineOffset = onlineOffset
 
 	font, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read font: %w", err)
 	}
 	beatmap.Font = font
 
 	isUnplayed, err := readBoolean(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read unplayed: %w", err)
 	}
 	beatmap.IsUnplayed = isUnplayed
 
 	lastPlayed, err := readLong(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read lastplayed: %w", err)
 	}
 	beatmap.LastPlayed = lastPlayed
 
 	isOsz2, err := readBoolean(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read is osz2: %w", err)
 	}
 	beatmap.IsOsz2 = isOsz2
 
 	folderName, err := readString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read folder name: %w", err)
 	}
 	beatmap.FolderName = folderName
 
 	lastChecked, err := readLong(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read lastchecked: %w", err)
 	}
 	beatmap.LastChecked = lastChecked
 
 	ignoreBeatmapSound, err := readBoolean(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read ignore beatmap sound: %w", err)
 	}
 	beatmap.IgnoreBeatmapSound = ignoreBeatmapSound
 
 	ignoreBeatmapSkin, err := readBoolean(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read ignore beatmap skin: %w", err)
 	}
 	beatmap.IgnoreBeatmapSkin = ignoreBeatmapSkin
 
 	disableStoryboard, err := readBoolean(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read disble storyboard: %w", err)
 	}
 	beatmap.DisableStoryboard = disableStoryboard
 
 	disableVideo, err := readBoolean(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read disable video: %w", err)
 	}
 	beatmap.DisableVideo = disableVideo
 
 	visualOverride, err := readBoolean(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read visual overwrite: %w", err)
 	}
 	beatmap.VisualOverride = visualOverride
 
 	if version < 20140609 {
 		unknownShort, err := readShort(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read unknown short: %w", err)
 		}
 		beatmap.UnknownShort = &unknownShort
 	}
 
 	lastModTime2, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read last modification time 2: %w", err)
 	}
 	beatmap.LastModificationTime2 = lastModTime2
 
 	if err := binary.Read(r, binary.LittleEndian, &beatmap.ManiaScrollSpeed); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read mania scorll speed: %w", err)
 	}
 
 	return beatmap, nil
@@ -831,24 +831,24 @@ func readBeatmap(r io.Reader, version int32) (*Beatmap, error) {
 func readTimingPoints(r io.Reader) ([]TimingPoint, error) {
 	count, err := readInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read count: %w", err)
 	}
 
 	timingPoints := make([]TimingPoint, 0, count)
 	for i := 0; i < int(count); i++ {
 		bpm, err := readDouble(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read bpm: %w", err)
 		}
 
 		offset, err := readDouble(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read offset: %w", err)
 		}
 
 		inherited, err := readBoolean(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read  inherited: %w", err)
 		}
 
 		timingPoints = append(timingPoints, TimingPoint{
@@ -864,13 +864,13 @@ func ParseOsuDB(filename string) (*OsuDB, error) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic: %v", r)
+			err = fmt.Errorf("failed to parse osudb: %s, panic: %v", filename, r)
 		}
 	}()
 
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0444)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to openfile: %s, error: %w", filename, err)
 	}
 	defer file.Close()
 
@@ -878,52 +878,52 @@ func ParseOsuDB(filename string) (*OsuDB, error) {
 
 	version, err := readInt(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read version: %w", err)
 	}
 
 	folderCount, err := readInt(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read foldercount: %w", err)
 	}
 
 	accountUnlocked, err := readBoolean(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read account unlocked: %w", err)
 	}
 
 	var unlockDate time.Time
 	ticks, err := readLong(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read unlock date: %w", err)
 	}
 	unlockDate = readDateTime(ticks)
 
 	playerName, err := readString(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read player name: %w", err)
 	}
 
 	numberOfBeatmaps, err := readInt(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read beatmap count: %w", err)
 	}
 
 	beatmaps := make([]*Beatmap, 0, numberOfBeatmaps)
 	for i := 0; i < int(numberOfBeatmaps); i++ {
 		beatmap, err := readBeatmap(reader, version)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read beatmap: %w", err)
 		}
 		beatmaps = append(beatmaps, beatmap)
 	}
 
 	userPermissions, err := readInt(reader)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read user permissions: %w", err)
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("something went wrong: %w", err)
 	}
 
 	return &OsuDB{
