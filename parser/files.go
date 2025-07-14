@@ -184,6 +184,7 @@ func parseOsuFile(filename string) (*OsuFile, error) {
 		return nil, fmt.Errorf("failed to read bytedata: %w", err)
 	}
 
+	byteData = bytes.TrimPrefix(byteData, []byte{0xEF, 0xBB, 0xBF})
 	lines := bytes.Split(byteData, []byte{'\n'})
 	osuFile := &OsuFile{}
 	currentSection := ""
@@ -191,13 +192,16 @@ func parseOsuFile(filename string) (*OsuFile, error) {
 
 	for i, lineStr := range lines {
 		if i == 0 {
-			if len(lineStr) > 17 {
-				versionStr := string(lineStr[17:])
-				versionStr = strings.TrimSpace(versionStr)
+			line := strings.TrimSpace(string(lineStr))
+			prefix := "osu file format v"
+			if strings.HasPrefix(line, prefix) {
+				versionStr := strings.TrimSpace(line[len(prefix):])
 				osuFile.Version, err = strconv.Atoi(versionStr)
 				if err != nil {
 					parseErrs = append(parseErrs, fmt.Errorf("failed to parse version: %w", err))
 				}
+			} else {
+				parseErrs = append(parseErrs, fmt.Errorf("unexpected first line format: %s", line))
 			}
 		}
 
@@ -448,6 +452,14 @@ func parseDifficulty(line string, difficulty *Difficulty) error {
 	return nil
 }
 
+var allowedEventTypes map[string]bool = map[string]bool{
+	"0":     true, // Background
+	"1":     true, // Video (numeric form)
+	"2":     true, // Break
+	"Video": true, // Video (string form)
+	"Break": true, // Break (string form)
+}
+
 func parseEvents(line string, events *[]Event) error {
 	parts := strings.Split(line, ",")
 	if len(parts) < 1 {
@@ -455,17 +467,39 @@ func parseEvents(line string, events *[]Event) error {
 	}
 
 	eventType := parts[0]
-	startTime := 0
-	var eventParams []string
 
-	if len(parts) > 1 {
-		var err error
+	if !allowedEventTypes[eventType] {
+		return nil
+	}
+
+	startTime := 0
+	var err error
+
+	if eventType == "2" || eventType == "Break" {
+		if len(parts) < 3 {
+			return fmt.Errorf("invalid break event line: %q", line)
+		}
 		startTime, err = strconv.Atoi(parts[1])
 		if err != nil {
-			return fmt.Errorf("failed to parse StartTime from %q: %w", parts[1], err)
+			return fmt.Errorf("failed to parse startTime from %q: %w", parts[1], err)
+		}
+		eventParams := parts[2:]
+		*events = append(*events, Event{
+			EventType:   eventType,
+			StartTime:   startTime,
+			EventParams: eventParams,
+		})
+		return nil
+	}
+
+	if len(parts) > 1 {
+		startTime, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return fmt.Errorf("failed to parse startTime from %q: %w", parts[1], err)
 		}
 	}
 
+	eventParams := []string{}
 	if len(parts) > 2 {
 		eventParams = parts[2:]
 	}
@@ -485,10 +519,11 @@ func parseTimingPoints(line string, timingPoints *[]TimingPointFile) error {
 		return fmt.Errorf("invalid timing point line (expected 8+ parts): %q", line)
 	}
 
-	time, err := strconv.Atoi(parts[0])
+	timeFloat, err := strconv.ParseFloat(parts[0], 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse Time from %q: %w", parts[0], err)
 	}
+	time := int(timeFloat)
 
 	beatLength, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
@@ -632,4 +667,15 @@ func parseHitObjects(line string, hitObjects *[]HitObject) error {
 	})
 
 	return nil
+}
+
+func (o *OsuFile) BackgroundImage() string {
+	for _, event := range o.Events {
+		if event.EventType == "0" || strings.EqualFold(event.EventType, "Background") {
+			if len(event.EventParams) > 0 {
+				return strings.Trim(event.EventParams[0], "\"")
+			}
+		}
+	}
+	return ""
 }
