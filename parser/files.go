@@ -142,11 +142,10 @@ type Health struct {
 type ReplayData struct {
 }
 
-func ParseOsuFile(filename string) (*OsuFile, error) {
-	var err error
+func ParseOsuFile(filename string) (osufile *OsuFile, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("Unexpected error occored: %v", r)
+			err = fmt.Errorf("unexpected error occurred: %v", r)
 		}
 	}()
 
@@ -156,11 +155,13 @@ func ParseOsuFile(filename string) (*OsuFile, error) {
 
 	OsuFile, err := parseOsuFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse osufile: %s, error :%w", filename, err)
+		return nil, fmt.Errorf("failed to parse osufile: %s, error: %w", filename, err)
+	}
+	if OsuFile == nil {
+		return nil, fmt.Errorf("parsed OsuFile is nil: %s", filename)
 	}
 
 	return OsuFile, nil
-
 }
 
 func parseOsuFile(filename string) (*OsuFile, error) {
