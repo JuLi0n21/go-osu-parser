@@ -515,9 +515,6 @@ func parseEvents(line string, events *[]Event) error {
 
 func parseTimingPoints(line string, timingPoints *[]TimingPointFile) error {
 	parts := strings.Split(line, ",")
-	if len(parts) < 8 {
-		return fmt.Errorf("invalid timing point line (expected 8+ parts): %q", line)
-	}
 
 	timeFloat, err := strconv.ParseFloat(parts[0], 64)
 	if err != nil {
@@ -555,9 +552,13 @@ func parseTimingPoints(line string, timingPoints *[]TimingPointFile) error {
 		return fmt.Errorf("failed to parse Uninherited from %q: %w", parts[6], err)
 	}
 
-	effects, err := strconv.Atoi(parts[7])
-	if err != nil {
-		return fmt.Errorf("failed to parse Effects from %q: %w", parts[7], err)
+	//fall back for older versions...
+	effects := 0
+	if len(parts) == 8 {
+		effects, err = strconv.Atoi(parts[7])
+		if err != nil {
+			return fmt.Errorf("failed to parse Effects from %q: %w", parts[7], err)
+		}
 	}
 
 	*timingPoints = append(*timingPoints, TimingPointFile{

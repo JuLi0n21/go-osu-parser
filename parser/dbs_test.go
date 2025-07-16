@@ -1,6 +1,8 @@
 package parser_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/juli0n21/go-osu-parser/parser"
@@ -107,4 +109,29 @@ func TestParseScoresDb(t *testing.T) {
 		t.Errorf("Expected PlayerName '%s', but got '%s'", expectedPlayerName, score.PlayerName)
 	}
 
+}
+
+func TestFileParsing(t *testing.T) {
+	//scan file tree of ./testdata for .osu files and parse them all
+	testDir := "./testdata"
+
+	err := filepath.Walk(testDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && filepath.Ext(path) == ".osu" {
+			t.Logf("Parsing file: %s", path)
+			_, err := parser.ParseOsuFile(path)
+			if err != nil {
+				t.Errorf("Failed to parse %s: %v", path, err)
+			}
+
+		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatalf("Error walking through testdata directory: %v", err)
+	}
 }
