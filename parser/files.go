@@ -672,6 +672,10 @@ func parseHitObjects(line string, hitObjects *[]HitObject) error {
 }
 
 func (o *OsuFile) BackgroundImage() string {
+	if o == nil || o.Events == nil {
+		return ""
+	}
+
 	for _, event := range o.Events {
 		if event.EventType == "0" || strings.EqualFold(event.EventType, "Background") {
 			if len(event.EventParams) > 0 {
